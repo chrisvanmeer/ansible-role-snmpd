@@ -1,0 +1,57 @@
+---
+# tasks file for ansible-role-snmpd
+
+- name: Combine global, group and host variables
+  ansible.builtin.set_fact:
+    snmpd_v3_users: >-
+      {{
+        snmpd_v3_users_global +
+        snmpd_v3_users_group +
+        snmpd_v3_users_host
+      }}
+
+- name: Import assert.yml
+  ansible.builtin.import_tasks:
+    file: assert.yml
+  delegate_to: localhost
+
+- name: Ensure snmpd
+  ansible.builtin.package:
+    name: "{{ snmpd_packages }}"
+    state: present
+
+- name: Stop snmpd
+  ansible.builtin.service:
+    name: "{{ snmpd_service }}"
+    state: stopped
+  when: snmpd_v3_users | length > 0
+
+- name: Ensure snmpv3 users
+  ansible.builtin.lineinfile:
+    path: /var/lib/snmp/snmpd.conf
+    line: "createUser {{ item.username }} {{ item.auth_proto }} {{ item.auth_pass }} {{ item.priv_proto }} {{ item.priv_pass }}"
+  loop: "{{ snmpd_v3_users }}"
+  loop_control:
+    label: "{{ item.username }}"
+  when: snmpd_v3_users | length > 0
+  notify:
+    - Restart snmpd
+
+- name: Configure snmpd
+  ansible.builtin.template:
+    src: snmpd.conf.j2
+    dest: /etc/snmp/snmpd.conf
+    mode: "0600"
+    owner: root
+    group: root
+  notify:
+    - Restart snmpd
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Start snmpd
+  ansible.builtin.service:
+    name: "{{ snmpd_service }}"
+    state: started
+    enabled: true
