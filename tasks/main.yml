@@ -20,22 +20,68 @@
     name: "{{ snmpd_packages }}"
     state: present
 
-- name: Stop snmpd
-  ansible.builtin.service:
-    name: "{{ snmpd_service }}"
-    state: stopped
+- name: SNMPv3
   when: snmpd_v3_users | length > 0
+  block:
+    - name: Initialize snmpd_user_hex_map dictionary
+      ansible.builtin.set_fact:
+        snmpd_user_hex_map: {}
 
-- name: Ensure snmpv3 users
-  ansible.builtin.lineinfile:
-    path: /var/lib/snmp/snmpd.conf
-    line: "createUser {{ item.username }} {{ item.auth_proto }} {{ item.auth_pass }} {{ item.priv_proto }} {{ item.priv_pass }}"
-  loop: "{{ snmpd_v3_users }}"
-  loop_control:
-    label: "{{ item.username }}"
-  when: snmpd_v3_users | length > 0
-  notify:
-    - Restart snmpd
+    - name: Calculate username in HEX value
+      ansible.builtin.command:
+        cmd: >-
+          python3 -c "print(''.join([hex(ord(c))[2:] for c in '{{ item.username }}']))"
+      register: snmpd_user_hex_result
+      changed_when: false
+      loop: "{{ snmpd_v3_users }}"
+      loop_control:
+        label: "{{ item.username }}"
+      delegate_to: localhost
+
+    - name: Create map of username to HEX value
+      ansible.builtin.set_fact:
+        snmpd_user_hex_map: >-
+          {{
+            snmpd_user_hex_map | combine({item.item.username: item.stdout})
+          }}
+      loop: "{{ snmpd_user_hex_result.results }}"
+      loop_control:
+        label: "{{ item.item.username }}"
+
+    - name: Check if string or its hex representation exists in the config file
+      ansible.builtin.shell: >
+        grep -E '{{ item.key }}|{{ item.value }}' /var/lib/snmp/snmpd.conf
+      register: snmpd_user_grep_result
+      failed_when: snmpd_user_grep_result.rc not in [0, 1]
+      changed_when: false
+      loop: "{{ snmpd_user_hex_map | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+
+    - name: Manage SNMPv3
+      when: >
+        snmpd_user_grep_result.results | selectattr('rc', 'eq', 1) | list | length > 0
+      block:
+        - name: Stop snmpd
+          ansible.builtin.service:
+            name: "{{ snmpd_service }}"
+            state: stopped
+
+        - name: Ensure snmpv3 users
+          ansible.builtin.lineinfile:
+            path: /var/lib/snmp/snmpd.conf
+            line: >-
+              createUser
+              {{ item.username }}
+              {{ item.auth_proto }}
+              {{ item.auth_pass }}
+              {{ item.priv_proto }}
+              {{ item.priv_pass }}"
+          loop: "{{ snmpd_v3_users }}"
+          loop_control:
+            label: "{{ item.username }}"
+          notify:
+            - Restart snmpd
 
 - name: Configure snmpd
   ansible.builtin.template:
