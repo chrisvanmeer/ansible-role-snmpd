@@ -9,6 +9,10 @@
         snmpd_v3_users_group +
         snmpd_v3_users_host
       }}
+  when: >
+    (snmpd_v3_users_global | length > 0) or
+    (snmpd_v3_users_group | length > 0) or
+    (snmpd_v3_users_host | length > 0)
 
 - name: Import assert.yml
   ansible.builtin.import_tasks:

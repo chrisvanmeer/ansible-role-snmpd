@@ -4,9 +4,10 @@
 - name: assert | Test snmpd_security_names
   ansible.builtin.assert:
     that:
-      - snmpd_security_names is defined
       - snmpd_security_names is iterable
     quiet: true
+  when:
+    - snmpd_security_names is defined
 
 - name: assert | Test item in snmpd_security_names
   ansible.builtin.assert:
@@ -24,13 +25,16 @@
   loop: "{{ snmpd_security_names }}"
   loop_control:
     label: "{{ item.name }}"
+  when:
+    - snmpd_security_names is defined
 
 - name: assert | Test snmpd_groups
   ansible.builtin.assert:
     that:
-      - snmpd_groups is defined
       - snmpd_groups is iterable
     quiet: true
+  when:
+    - snmpd_groups is defined
 
 - name: assert | Test item in snmpd_groups
   ansible.builtin.assert:
@@ -44,18 +48,20 @@
       - item.security_name is defined
       - item.security_name is string
       - item.security_name is not none
-      # - item.security_name in snmpd_security_names
     quiet: true
   loop: "{{ snmpd_groups }}"
   loop_control:
     label: "{{ item.name }}"
+  when:
+    - snmpd_groups is defined
 
 - name: assert | Test snmpd_views
   ansible.builtin.assert:
     that:
-      - snmpd_views is defined
       - snmpd_views is iterable
     quiet: true
+  when:
+    - snmpd_views is defined
 
 - name: assert | Test item in snmpd_views
   ansible.builtin.assert:
@@ -74,13 +80,16 @@
   loop: "{{ snmpd_views }}"
   loop_control:
     label: "{{ item.name }}"
+  when:
+    - snmpd_views is defined
 
 - name: assert | Test snmpd_accesses
   ansible.builtin.assert:
     that:
-      - snmpd_accesses is defined
       - snmpd_accesses is iterable
     quiet: true
+  when:
+    - snmpd_accesses is defined
 
 - name: assert | Test item in snmpd_accesses
   ansible.builtin.assert:
@@ -113,25 +122,53 @@
   loop: "{{ snmpd_accesses }}"
   loop_control:
     label: "{{ item.group }}"
+  when:
+    - snmpd_accesses is defined
 
 - name: assert | Test snmpd_syslocation
   ansible.builtin.assert:
     that:
-      - snmpd_syslocation is defined
-      - snmpd_syslocation is iterable
+      - snmpd_syslocation is string
     quiet: true
+  when:
+    - snmpd_syslocation is defined
 
 - name: assert | Test snmpd_syscontact
   ansible.builtin.assert:
     that:
-      - snmpd_syscontact is defined
-      - snmpd_syscontact is iterable
+      - snmpd_syscontact is string
     quiet: true
+  when:
+    - snmpd_syscontact is defined
+
+- name: assert | Test snmpd_sysservices
+  ansible.builtin.assert:
+    that:
+      - snmpd_sysservices is number
+    quiet: true
+  when:
+    - snmpd_sysservices is defined
+
+- name: assert | Test snmpd_master_agentx
+  ansible.builtin.assert:
+    that:
+      - snmpd_master_agentx is boolean
+    quiet: true
+  when:
+    - snmpd_master_agentx is defined
+
+- name: assert | Test snmpd_agent_address
+  ansible.builtin.assert:
+    that:
+      - snmpd_agent_address is string
+      - snmpd_agent_address is search(':')
+    quiet: true
+  when:
+    - snmpd_agent_address is defined
 
 - name: assert | Test snmpd_dontlogtcpwrappersconnects
   ansible.builtin.assert:
     that:
-      - snmpd_dontlogtcpwrappersconnects is defined
       - snmpd_dontlogtcpwrappersconnects is string
       - snmpd_dontlogtcpwrappersconnects in [ "no", "yes" ]
     quiet: true
@@ -293,3 +330,15 @@
   when:
     - snmpd_v3_users is defined
     - item.readonly is defined
+
+- name: assert | Test optional item.authpriv in snmpd_v3_users
+  ansible.builtin.assert:
+    that:
+      - item.authpriv is boolean
+    quiet: true
+  loop: "{{ snmpd_v3_users }}"
+  loop_control:
+    label: "{{ item.username }}"
+  when:
+    - snmpd_v3_users is defined
+    - item.authpriv is defined

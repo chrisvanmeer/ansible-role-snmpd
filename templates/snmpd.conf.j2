@@ -1,5 +1,33 @@
 {{ ansible_managed | comment }}
 
+{% if snmpd_syslocation is defined %}
+{{ '%-15s' | format("syslocation") }} {{ snmpd_syslocation }}
+{% endif %}
+{% if snmpd_syscontact is defined %}
+{{ '%-15s' | format("syscontact") }} {{ snmpd_syscontact }}
+{% endif %}
+
+{% if snmpd_sysservices is defined %}
+{{ '%-15s' | format("sysServices") }} {{ snmpd_sysservices }}
+{% endif %}
+
+{% if snmpd_agent_address is defined %}
+{{ '%-15s' | format("agentaddress") }} {{ snmpd_agent_address }}
+{% endif %}
+
+{% if snmpd_master_agentx is defined %}
+{% if snmpd_master_agentx | bool %}
+{{ '%-15s' | format("master") }} agentx
+{% endif %}
+{% endif %}
+
+{% if snmpd_views is defined %}
+{% for view in snmpd_views %}
+view {{ '%-10s' | format(view.name) }} {{ view.type }} {{ view.subtree }}{% if view.mask is defined %} {{ view.mask }}{% endif %}
+
+{% endfor %}
+{% endif %}
+
 {% if snmpd_security_names is defined %}
 {% for security_name in snmpd_security_names %}
 com2sec {{ security_name.name }} {{ security_name.source }} {{ security_name.community }}
@@ -12,21 +40,11 @@ group {{ group.name }} {{ group.security_model }} {{ group.security_name }}
 {% endfor %}
 {% endif %}
 
-{% if snmpd_views is defined %}
-{% for view in snmpd_views %}
-view {{ view.name }} {{ view.type }} {{ view.subtree }} {% if view.mask is defined %}{{ view.mask }}{% endif %}
-
-{% endfor %}
-{% endif %}
-
 {% if snmpd_accesses is defined %}
 {% for access in snmpd_accesses %}
 access {{ access.group }} "{{ access.context }}" {{ access.security_model }} {{ access.security_level }} {{ access.prefix }} {{ access.read }} {{ access.write }} {{ access.notif }}
 {% endfor %}
 {% endif %}
-
-syslocation {{ snmpd_syslocation }}
-syscontact {{ snmpd_syscontact }}
 
 {% if snmpd_dontlogtcpwrappersconnects is defined %}
 dontLogTCPWrappersConnects {{ snmpd_dontlogtcpwrappersconnects }}
@@ -34,7 +52,7 @@ dontLogTCPWrappersConnects {{ snmpd_dontlogtcpwrappersconnects }}
 
 {% if snmpd_processes is defined %}
 {% for process in snmpd_processes %}
-proc {{ process.name }} {% if process.maximum is defined %}{{ process.maximum }}{% endif %} {% if process.minimum is defined %}{{ process.minimum }}{% endif %}
+proc {{ process.name }}{% if process.maximum is defined %} {{ process.maximum }}{% endif %}{% if process.minimum is defined %} {{ process.minimum }}{% endif %}
 {% endfor %}
 {% endif %}
 
@@ -58,12 +76,13 @@ load {{ snmpd_load.one_minute_average }} {{ snmpd_load.five_minute_average }} {{
 {% for user in snmpd_v3_users %}
 {% if user.readonly is defined %}
 {% if user.readonly | bool %}
-rouser {{ user.username }}
+{{ '%-15s' | format("rouser") }}  {{ user.username }}{% if user.authpriv is defined and user.authpriv | bool %} authpriv{% endif %}
 {% else %}
-rwuser {{ user.username }}
+{{ '%-15s' | format("rwuser") }}  {{ user.username }}{% if user.authpriv is defined and user.authpriv | bool %} authpriv{% endif %}
 {% endif %}
 {% else %}
-rwuser {{ user.username }}
+{{ '%-15s' | format("rwuser") }}  {{ user.username }}{% if user.authpriv is defined and user.authpriv | bool %} authpriv{% endif %}
 {% endif %}
 {% endfor %}
 {% endif %}
+

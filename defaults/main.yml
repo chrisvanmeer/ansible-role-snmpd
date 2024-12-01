@@ -1,39 +1,43 @@
 ---
 # defaults file for ansible-role-snmpd
 
-snmpd_security_names:
-  - name: notConfigUser
-    source: default
-    community: public
+# snmpd_syslocation: Unknown
+# snmpd_syscontact: Root <root@localhost>
+# snmpd_sysservices: 72
 
-snmpd_groups:
-  - name: notConfigGroup
-    security_model: v1
-    security_name: notConfigUser
-  - name: notConfigGroup
-    security_model: v2c
-    security_name: notConfigUser
+# snmpd_agent_address: udp:192.168.1.66:161
+# snmpd_master_agentx: true
 
-snmpd_views:
-  - name: systemview
-    type: included
-    subtree: ".1.3.6.1.2.1.1"
-  - name: systemview
-    type: included
-    subtree: ".1.3.6.1.2.1.25.1.1"
+# snmpd_views:
+#   - name: systemview
+#     type: included
+#     subtree: ".1.3.6.1.2.1.1"
+#   - name: systemview
+#     type: included
+#     subtree: ".1.3.6.1.2.1.25.1.1"
 
-snmpd_accesses:
-  - group: notConfigGroup
-    context: ""
-    security_model: any
-    security_level: noauth
-    prefix: exact
-    read: systemview
-    write: none
-    notif: none
+# snmpd_security_names:
+#   - name: notConfigUser
+#     source: default
+#     community: public
 
-snmpd_syslocation: Unknown
-snmpd_syscontact: Root <root@localhost>
+# snmpd_groups:
+#   - name: notConfigGroup
+#     security_model: v1
+#     security_name: notConfigUser
+#   - name: notConfigGroup
+#     security_model: v2c
+#     security_name: notConfigUser
+
+# snmpd_accesses:
+#   - group: notConfigGroup
+#     context: ""
+#     security_model: any
+#     security_level: noauth
+#     prefix: exact
+#     read: systemview
+#     write: none
+#     notif: none
 
 # snmpd_dontlogtcpwrappersconnects: "yes"
 
@@ -59,9 +63,7 @@ snmpd_syscontact: Root <root@localhost>
 #   five_minute_average: 14
 #   fifteen_minute_average: 14
 
-# Below lists will be combined to snmpd_v3_users.
-snmpd_v3_users_global: []
-# Example:
+# SNMPv3 users example:
 # snmpd_v3_users_global:
 #   - username: snmp
 #     auth_proto: SHA
@@ -69,6 +71,9 @@ snmpd_v3_users_global: []
 #     priv_proto: AES
 #     priv_pass: <ansible-vault encrypted string>
 #     readonly: true
+#     authpriv: true
 
+# Below lists will be combined to snmpd_v3_users.
+snmpd_v3_users_global: []
 snmpd_v3_users_group: []
 snmpd_v3_users_host: []
