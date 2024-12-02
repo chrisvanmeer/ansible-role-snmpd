@@ -66,4 +66,4 @@ rules:
     # level: warning
     allowed-values: ["true", "false"]
     # Uncomment to allow 'yes' and 'no' to be used as well
-    #allowed-values: ["true", "false", "yes", "no"]
+    # allowed-values: ["true", "false", "yes", "no"]

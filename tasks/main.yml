@@ -53,6 +53,7 @@
         label: "{{ item.item.username }}"
 
     - name: Check if string or its hex representation exists in the config file
+      # noqa: risky-shell-pipe
       ansible.builtin.shell: >
         grep -E '{{ item.key }}|{{ item.value }}' /var/lib/snmp/snmpd.conf
       register: snmpd_user_grep_result
