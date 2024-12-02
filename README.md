@@ -3,6 +3,9 @@ ansible-role-snmpd
 
 Ansible role to install and manage snmpd plus with snmpv3 users.
 
+This role was partially forked / used from the [robertdebock.snmpd](https://github.com/robertdebock/ansible-role-snmpd)
+role. However, I found that certain parts are lacking and deviates far enough from the original to grant a forked version.
+
 Requirements
 ------------
 
@@ -11,7 +14,10 @@ No requirements.
 Role Defaults
 -------------
 
-See `defaults/main.yml` for all defaults.
+See `defaults/main.yml` for all defaults that are available in this role.
+
+I've commented out almost every one to make the role more flexible. Needless to say, you would have
+to fit thise into either `group_vars` and/or `host_vars` to make this work.
 
 Dependencies
 ------------
@@ -20,8 +26,6 @@ No dependencies
 
 Example Playbook
 ----------------
-
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
 
     - name: Install and manage snmpd
       hosts: all
@@ -36,6 +40,7 @@ Including an example of how to use your role (for instance, with variables passe
               priv_proto: AES
               priv_pass: <ansible-vault encrypted string>
               readonly: true
+              authpriv: true
 
 License
 -------
