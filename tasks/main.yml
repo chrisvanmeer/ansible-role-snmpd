@@ -41,6 +41,7 @@
       loop_control:
         label: "{{ item.username }}"
       delegate_to: localhost
+      become: false
 
     - name: Create map of username to HEX value
       ansible.builtin.set_fact:
