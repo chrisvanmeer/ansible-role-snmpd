@@ -36,6 +36,7 @@
         cmd: >-
           python3 -c "print(''.join([hex(ord(c))[2:] for c in '{{ item.username }}']))"
       register: snmpd_user_hex_result
+      check_mode: false
       changed_when: false
       loop: "{{ snmpd_v3_users }}"
       loop_control:
@@ -80,14 +81,18 @@
               createUser
               {{ item.username }}
               {{ item.auth_proto }}
-              {{ item.auth_pass }}
+              "{{ item.auth_pass }}"
               {{ item.priv_proto }}
-              {{ item.priv_pass }}"
+              "{{ item.priv_pass }}"
           loop: "{{ snmpd_v3_users }}"
           loop_control:
             label: "{{ item.username }}"
           notify:
-            - Restart snmpd
+            - Start snmpd
+            - Stop snmpd
+
+        - name: Flush handlers
+          ansible.builtin.meta: flush_handlers
 
 - name: Configure snmpd
   ansible.builtin.template:
