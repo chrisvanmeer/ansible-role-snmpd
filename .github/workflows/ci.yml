@@ -105,9 +105,14 @@ jobs:
           path: |
             ~/.ansible/collections
             ~/.ansible/roles
-          key: molecule-${{ matrix.scenario }}-${{ hashFiles('molecule/**/molecule.yml') }}
+          key: molecule-${{ matrix.scenario }}-${{ hashFiles('requirements.yml', 'molecule/**/molecule.yml') }}
           restore-keys: |
             molecule-${{ matrix.scenario }}-
+
+      # The role itself only uses ansible.builtin, but molecule's docker driver
+      # needs community.docker, which is not pulled in by molecule-plugins.
+      - name: Install the collections the docker driver needs
+        run: ansible-galaxy collection install --requirements-file requirements.yml
 
       - name: Run the molecule test suite
         run: molecule test --scenario-name ${{ matrix.scenario }}
@@ -126,7 +131,6 @@ jobs:
     needs: [lint, compatibility, test]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    environment: galaxy
     steps:
       - name: Checkout
         uses: actions/checkout@v7
