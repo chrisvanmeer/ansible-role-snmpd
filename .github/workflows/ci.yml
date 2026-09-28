@@ -171,14 +171,20 @@ jobs:
           GALAXY_API_KEY: ${{ secrets.GALAXY_API_KEY }}
           GALAXY_OWNER: ${{ github.repository_owner }}
           GALAXY_REPO: ${{ github.event.repository.name }}
-        # The `chrisvanmeer.snmpd` namespace and name come from meta/main.yml.
-        # --force makes a re-run of the same tag succeed instead of failing.
+          RELEASE_TAG: ${{ github.ref_name }}
+        # The role name matches `role_name` from meta/main.yml. Without it the
+        # name is derived from the repository name, which would publish a
+        # second role called `ansible-role-snmpd` next to `snmpd`.
+        # --branch pins the import to the tag that triggered this run, so the
+        # version Galaxy records is the tag rather than whatever the default
+        # branch happens to point at.
         run: |
           ansible-galaxy role import \
             "${GALAXY_OWNER}" \
             "${GALAXY_REPO}" \
-            --api-key "${GALAXY_API_KEY}" \
-            --force
+            --role-name snmpd \
+            --branch "${RELEASE_TAG}" \
+            --api-key "${GALAXY_API_KEY}"
 
       - name: Report the published version
         env:
