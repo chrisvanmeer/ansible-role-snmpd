@@ -1,0 +1,183 @@
+---
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install the linters
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install yamllint ansible-lint
+
+      - name: Lint YAML
+        run: yamllint --config-file .yamllint .
+
+      - name: Lint Ansible
+        run: ansible-lint --profile production .
+
+  compatibility:
+    name: Compatibility with the declared minimum
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          # ansible-core 2.15 does not support Python 3.12 on the controller.
+          python-version: '3.11'
+
+      - name: Read the declared minimum ansible-core version
+        id: meta
+        run: |
+          python -m pip install --quiet PyYAML
+          echo "min=$(python -c "import yaml; print(yaml.safe_load(open('meta/main.yml'))['galaxy_info']['min_ansible_version'])")" >> "$GITHUB_OUTPUT"
+          echo "meta/main.yml declares min_ansible_version=$(cat "$GITHUB_OUTPUT")"
+
+      - name: Set up the declared minimum ansible-core
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "ansible-core==${{ steps.meta.outputs.min }}.*"
+          ansible --version
+
+      - name: Check that the role parses on that version
+        env:
+          # The role is the repository root, so the search path is its parent.
+          ANSIBLE_ROLES_PATH: ${{ github.workspace }}/..
+        run: ansible-playbook -i localhost, --syntax-check tests/compat.yml
+
+  test:
+    name: Test ${{ matrix.scenario }}
+    needs: [lint, compatibility]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario:
+          - debian
+          - ubuntu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install the test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ansible-core molecule "molecule-plugins[docker]"
+          ansible --version
+          molecule --version
+
+      - name: Cache the Ansible Galaxy roles and collections
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.ansible/collections
+            ~/.ansible/roles
+          key: molecule-${{ matrix.scenario }}-${{ hashFiles('molecule/**/molecule.yml') }}
+          restore-keys: |
+            molecule-${{ matrix.scenario }}-
+
+      - name: Run the molecule test suite
+        run: molecule test --scenario-name ${{ matrix.scenario }}
+
+      - name: Upload the molecule logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: molecule-${{ matrix.scenario }}
+          path: molecule/*/*/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  galaxy:
+    name: Publish to Ansible Galaxy
+    needs: [lint, compatibility, test]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    environment: galaxy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # The import resolves the release from the tag that triggered the run.
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install ansible-core
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ansible-core
+
+      - name: Assert the release is a valid semantic version tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if [[ ! "${RELEASE_TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::'${RELEASE_TAG}' is not a valid vMAJOR.MINOR.PATCH tag, refusing to publish."
+            exit 1
+          fi
+
+      - name: Assert the Galaxy API key is configured
+        env:
+          GALAXY_API_KEY: ${{ secrets.GALAXY_API_KEY }}
+        run: |
+          if [[ -z "${GALAXY_API_KEY}" ]]; then
+            echo "::error::The GALAXY_API_KEY secret is not set, refusing to publish."
+            exit 1
+          fi
+
+      - name: Import the role into Ansible Galaxy
+        env:
+          GALAXY_API_KEY: ${{ secrets.GALAXY_API_KEY }}
+          GALAXY_OWNER: ${{ github.repository_owner }}
+          GALAXY_REPO: ${{ github.event.repository.name }}
+        # The `chrisvanmeer.snmpd` namespace and name come from meta/main.yml.
+        # --force makes a re-run of the same tag succeed instead of failing.
+        run: |
+          ansible-galaxy role import \
+            "${GALAXY_OWNER}" \
+            "${GALAXY_REPO}" \
+            --api-key "${GALAXY_API_KEY}" \
+            --force
+
+      - name: Report the published version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          echo "Published chrisvanmeer.snmpd ${RELEASE_TAG#v} to Ansible Galaxy."

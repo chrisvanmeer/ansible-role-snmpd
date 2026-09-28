@@ -1,0 +1,5 @@
+---
+# The playbook itself lives in molecule/shared so that both scenarios
+# exercise exactly the same configuration and verification.
+- name: Import the shared verify playbook
+  ansible.builtin.import_playbook: ../shared/verify.yml

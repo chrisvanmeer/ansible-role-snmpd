@@ -1,20 +1,19 @@
 ---
-# ansible-lint configuration directives
-# Project Homepage: https://github.com/ansible/ansible-lint
-# Documentation: https://ansible-lint.readthedocs.io
-#
-# Configuration file documentation:
-# https://ansible-lint.readthedocs.io/configuring/#ansible-lint-configuration
-#
+# ansible-lint configuration
+# https://ansible.readthedocs.io/projects/lint/configuring/
 
-# exclude_paths included in this file are parsed relative to this file's location
-# and not relative to the CWD of execution. CLI arguments passed to the --exclude
-# option are parsed relative to the CWD of execution.
-exclude_paths:
-  - library/
+# Ruleset/profile that determines which rules are active.
+profile: production
 
-# Return non-zero exit code on warnings as well as errors
+# Return non-zero exit code on warnings as well as errors.
 strict: true
 
-# Use terse parseable output
-parseable: true
+# Paths that are explicitly excluded from linting, relative to this file.
+exclude_paths:
+  - .github/
+  # tests/compat.yml is a CI-only scaffold that references the role from outside a
+  # roles/ directory, which cannot be resolved without an extra ANSIBLE_ROLES_PATH.
+  # It is a static import so `ansible-playbook --syntax-check` still validates the
+  # role with the ansible-core version declared in meta/main.yml, and yamllint
+  # still checks its formatting.
+  - tests/

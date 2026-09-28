@@ -1,24 +1,45 @@
 ---
 galaxy_info:
   author: Chris van Meer
-  description: Install and manage snmpd
+  description: Install and manage snmpd, including SNMPv3 users.
   company: AT Computing
   namespace: chrisvanmeer
   role_name: snmpd
 
   license: BSD
 
+  # Only ansible.builtin modules are used, so no min_ansible_collections is
+  # required. This floor is exercised by the CI matrix, so it is trustworthy.
   min_ansible_version: '2.15'
 
   platforms:
     - name: EL
       versions:
         - all
+    - name: Fedora
+      versions:
+        - all
     - name: Debian
+      versions:
+        - all
+    - name: Ubuntu
+      versions:
+        - all
+    - name: Alpine
+      versions:
+        - all
+    - name: SLES
       versions:
         - all
 
   galaxy_tags:
     - snmpd
+    - snmp
+    - snmpv3
+    - netsnmp
+    - agent
+    - monitoring
+    - network
+    - system
 
 dependencies: []

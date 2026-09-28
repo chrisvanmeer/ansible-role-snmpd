@@ -1,6 +1,9 @@
 ---
 # defaults file for ansible-role-snmpd
 
+# The values below are deliberately left unset. Only the directives you actually
+# define end up in the rendered snmpd.conf.
+
 # snmpd_syslocation: Unknown
 # snmpd_syscontact: Root <root@localhost>
 # snmpd_sysservices: 72
@@ -73,7 +76,27 @@
 #     readonly: true
 #     authpriv: true
 
-# Below lists will be combined to snmpd_v3_users.
+# The three lists below are combined into `snmpd_v3_users` by the role.
 snmpd_v3_users_global: []
 snmpd_v3_users_group: []
 snmpd_v3_users_host: []
+
+# Operational defaults. Override these in your play, group_vars or host_vars
+# when a platform does not follow these conventions.
+
+# Package that provides the SNMP daemon.
+snmpd_packages: "{{ _snmpd_packages[ansible_os_family] | default(_snmpd_packages['default']) }}"
+
+# Name of the snmpd service, used for start/stop/restart and boot time enabling.
+snmpd_service: snmpd
+
+# Main configuration file, rendered from templates/snmpd.conf.j2.
+snmpd_config_file: /etc/snmp/snmpd.conf
+
+# Location of the net-snmp persistence file that holds the `createUser` lines.
+snmpd_v3_users_file: >-
+  {{
+    '/var/lib/snmp/snmpd.conf'
+    if ansible_os_family == 'Debian'
+    else '/var/lib/net-snmp/snmpd.conf'
+  }}

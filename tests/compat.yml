@@ -1,0 +1,11 @@
+---
+# This playbook is never executed. It exists so that CI can run
+# `ansible-playbook --syntax-check` against the ansible-core version declared in
+# meta/main.yml, which keeps `min_ansible_version` honest without pulling in the
+# molecule docker driver (the community.docker collection requires a newer
+# ansible-core than the role itself does).
+- name: Parse the role with the declared minimum ansible-core
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - role: ansible-role-snmpd

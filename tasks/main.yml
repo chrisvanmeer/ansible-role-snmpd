@@ -1,113 +1,122 @@
 ---
 # tasks file for ansible-role-snmpd
 
-- name: Combine global, group and host variables
+- name: Combine the global, group and host level SNMPv3 users
   ansible.builtin.set_fact:
     snmpd_v3_users: >-
       {{
-        snmpd_v3_users_global +
-        snmpd_v3_users_group +
-        snmpd_v3_users_host
+        snmpd_v3_users_global
+        + snmpd_v3_users_group
+        + snmpd_v3_users_host
       }}
-  when: >
-    (snmpd_v3_users_global | length > 0) or
-    (snmpd_v3_users_group | length > 0) or
-    (snmpd_v3_users_host | length > 0)
 
-- name: Import assert.yml
+- name: Validate the role variables
   ansible.builtin.import_tasks:
     file: assert.yml
-  delegate_to: localhost
 
-- name: Ensure snmpd
+- name: Ensure snmpd is installed
   ansible.builtin.package:
     name: "{{ snmpd_packages }}"
     state: present
 
-- name: SNMPv3
+- name: Configure SNMPv3 users
   when: snmpd_v3_users | length > 0
   block:
-    - name: Initialize snmpd_user_hex_map dictionary
-      ansible.builtin.set_fact:
-        snmpd_user_hex_map: {}
+    - name: Ensure the SNMPv3 persistence file exists
+      ansible.builtin.copy:
+        dest: "{{ snmpd_v3_users_file }}"
+        content: ""
+        force: false
+        owner: root
+        group: root
+        mode: "0600"
 
-    - name: Calculate username in HEX value
-      ansible.builtin.command:
-        cmd: >-
-          python3 -c "print(''.join([hex(ord(c))[2:] for c in '{{ item.username }}']))"
-      register: snmpd_user_hex_result
-      check_mode: false
+    - name: Read the SNMPv3 persistence file
+      ansible.builtin.slurp:
+        src: "{{ snmpd_v3_users_file }}"
+      register: _snmpd_persistence
+
+    - name: Split the SNMPv3 persistence file into lines
+      ansible.builtin.set_fact:
+        _snmpd_persistence_lines: >-
+          {{ (_snmpd_persistence.content | b64decode).splitlines() | map('trim') | list }}
       changed_when: false
+
+    - name: Determine which SNMPv3 users the persistence file already knows about
+      ansible.builtin.set_fact:
+        # Once snmpd has started it replaces the plaintext `createUser` lines it
+        # was given with `usmUser` lines holding hashed keys, so both forms have
+        # to be recognised to keep this role idempotent.
+        _snmpd_existing_usernames: >-
+          {{
+            (
+              _snmpd_persistence_lines
+              | select('match', '^createUser\s+\S')
+              | map('regex_replace', '^createUser\s+(\S+).*$', '\1')
+              | list
+              + _snmpd_persistence_lines
+              | select('match', '^usmUser\s')
+              | map('regex_replace', '^usmUser\s+\S+\s+\S+\s+\S+\s+\S+\s+"?([^"\s]+)"?.*$', '\1')
+              | list
+            )
+          }}
+      changed_when: false
+
+    - name: Reset the list of SNMPv3 user definitions to create
+      ansible.builtin.set_fact:
+        snmpd_v3_users_pending: []
+      changed_when: false
+
+    - name: Determine which SNMPv3 user definitions are missing
+      ansible.builtin.set_fact:
+        snmpd_v3_users_pending: "{{ snmpd_v3_users_pending + [item] }}"
       loop: "{{ snmpd_v3_users }}"
       loop_control:
         label: "{{ item.username }}"
-      delegate_to: localhost
-      become: false
-
-    - name: Create map of username to HEX value
-      ansible.builtin.set_fact:
-        snmpd_user_hex_map: >-
-          {{
-            snmpd_user_hex_map | combine({item.item.username: item.stdout})
-          }}
-      loop: "{{ snmpd_user_hex_result.results }}"
-      loop_control:
-        label: "{{ item.item.username }}"
-
-    - name: Check if string or its hex representation exists in the config file
-      # noqa: risky-shell-pipe
-      ansible.builtin.shell: >
-        grep -E '{{ item.key }}|{{ item.value }}' /var/lib/snmp/snmpd.conf
-      register: snmpd_user_grep_result
-      failed_when: snmpd_user_grep_result.rc not in [0, 1]
+      when: item.username not in _snmpd_existing_usernames
       changed_when: false
-      loop: "{{ snmpd_user_hex_map | dict2items }}"
+
+    - name: Stop snmpd before writing new user definitions
+      ansible.builtin.service:
+        name: "{{ snmpd_service }}"
+        state: stopped
+      when: snmpd_v3_users_pending | length > 0
+
+    - name: Persist the missing SNMPv3 user definitions
+      ansible.builtin.lineinfile:
+        path: "{{ snmpd_v3_users_file }}"
+        line: "{{ _snmpd_definition }}"
+        owner: root
+        group: root
+        mode: "0600"
+      loop: "{{ snmpd_v3_users_pending }}"
       loop_control:
-        label: "{{ item.key }}"
-
-    - name: Manage SNMPv3
-      when: >
-        snmpd_user_grep_result.results | selectattr('rc', 'eq', 1) | list | length > 0
-      block:
-        - name: Stop snmpd
-          ansible.builtin.service:
-            name: "{{ snmpd_service }}"
-            state: stopped
-
-        - name: Ensure snmpv3 users
-          ansible.builtin.lineinfile:
-            path: /var/lib/snmp/snmpd.conf
-            line: >-
-              createUser
-              {{ item.username }}
-              {{ item.auth_proto }}
-              "{{ item.auth_pass }}"
-              {{ item.priv_proto }}
-              "{{ item.priv_pass }}"
-          loop: "{{ snmpd_v3_users }}"
-          loop_control:
-            label: "{{ item.username }}"
-          notify:
-            - Start snmpd
-            - Stop snmpd
-
-        - name: Flush handlers
-          ansible.builtin.meta: flush_handlers
+        label: "{{ item.username }}"
+      vars:
+        _snmpd_definition: >-
+          createUser
+          {{ item.username }}
+          {{ item.auth_proto }}
+          "{{ item.auth_pass }}"
+          {{ item.priv_proto }}
+          "{{ item.priv_pass }}"
+      notify:
+        - Restart snmpd
 
 - name: Configure snmpd
   ansible.builtin.template:
     src: snmpd.conf.j2
-    dest: /etc/snmp/snmpd.conf
-    mode: "0600"
+    dest: "{{ snmpd_config_file }}"
     owner: root
     group: root
+    mode: "0600"
   notify:
     - Restart snmpd
 
-- name: Flush handlers
+- name: Apply the pending handler notifications
   ansible.builtin.meta: flush_handlers
 
-- name: Start snmpd
+- name: Ensure snmpd is running and enabled at boot
   ansible.builtin.service:
     name: "{{ snmpd_service }}"
     state: started

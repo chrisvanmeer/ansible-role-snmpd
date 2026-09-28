@@ -1,344 +1,348 @@
 ---
-# tasks file for ansible-role-snmpd
-
-- name: assert | Test snmpd_security_names
-  ansible.builtin.assert:
-    that:
-      - snmpd_security_names is iterable
-    quiet: true
-  when:
-    - snmpd_security_names is defined
-
-- name: assert | Test item in snmpd_security_names
-  ansible.builtin.assert:
-    that:
-      - item.name is defined
-      - item.name is string
-      - item.name is not none
-      - item.source is defined
-      - item.source is string
-      - item.source is not none
-      - item.community is defined
-      - item.community is string
-      - item.community is not none
-    quiet: true
-  loop: "{{ snmpd_security_names }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when:
-    - snmpd_security_names is defined
-
-- name: assert | Test snmpd_groups
-  ansible.builtin.assert:
-    that:
-      - snmpd_groups is iterable
-    quiet: true
-  when:
-    - snmpd_groups is defined
-
-- name: assert | Test item in snmpd_groups
-  ansible.builtin.assert:
-    that:
-      - item.name is defined
-      - item.name is string
-      - item.name is not none
-      - item.security_model is defined
-      - item.security_model is string
-      - item.security_model in [ "v1", "v2c" ]
-      - item.security_name is defined
-      - item.security_name is string
-      - item.security_name is not none
-    quiet: true
-  loop: "{{ snmpd_groups }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when:
-    - snmpd_groups is defined
-
-- name: assert | Test snmpd_views
-  ansible.builtin.assert:
-    that:
-      - snmpd_views is iterable
-    quiet: true
-  when:
-    - snmpd_views is defined
-
-- name: assert | Test item in snmpd_views
-  ansible.builtin.assert:
-    that:
-      - item.name is defined
-      - item.name is string
-      - item.name is not none
-      - item.type is defined
-      - item.type is string
-      - item.type is not none
-      - item.type in [ "included", "excluded" ]
-      - item.subtree is defined
-      - item.subtree is string
-      - item.subtree is not none
-    quiet: true
-  loop: "{{ snmpd_views }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when:
-    - snmpd_views is defined
-
-- name: assert | Test snmpd_accesses
-  ansible.builtin.assert:
-    that:
-      - snmpd_accesses is iterable
-    quiet: true
-  when:
-    - snmpd_accesses is defined
-
-- name: assert | Test item in snmpd_accesses
-  ansible.builtin.assert:
-    that:
-      - item.group is defined
-      - item.group is string
-      - item.group is not none
-      - item.context is defined
-      - item.context is string
-      - item.context is not none
-      - item.security_model is defined
-      - item.security_model is string
-      - item.security_model in [ "any", "v1", "v2c", "usm" ]
-      - item.security_level is defined
-      - item.security_level is string
-      - item.security_level is not none
-      - item.prefix is defined
-      - item.prefix is string
-      - item.prefix is not none
-      - item.read is defined
-      - item.read is string
-      - item.read is not none
-      - item.write is defined
-      - item.write is string
-      - item.write is not none
-      - item.notif is defined
-      - item.notif is string
-      - item.notif is not none
-    quiet: true
-  loop: "{{ snmpd_accesses }}"
-  loop_control:
-    label: "{{ item.group }}"
-  when:
-    - snmpd_accesses is defined
-
-- name: assert | Test snmpd_syslocation
-  ansible.builtin.assert:
-    that:
-      - snmpd_syslocation is string
-    quiet: true
-  when:
-    - snmpd_syslocation is defined
-
-- name: assert | Test snmpd_syscontact
-  ansible.builtin.assert:
-    that:
-      - snmpd_syscontact is string
-    quiet: true
-  when:
-    - snmpd_syscontact is defined
-
-- name: assert | Test snmpd_sysservices
-  ansible.builtin.assert:
-    that:
-      - snmpd_sysservices is number
-    quiet: true
-  when:
-    - snmpd_sysservices is defined
-
-- name: assert | Test snmpd_master_agentx
-  ansible.builtin.assert:
-    that:
-      - snmpd_master_agentx is boolean
-    quiet: true
-  when:
-    - snmpd_master_agentx is defined
-
-- name: assert | Test snmpd_agent_address
-  ansible.builtin.assert:
-    that:
-      - snmpd_agent_address is string
-      - snmpd_agent_address is search(':')
-    quiet: true
-  when:
-    - snmpd_agent_address is defined
-
-- name: assert | Test snmpd_dontlogtcpwrappersconnects
-  ansible.builtin.assert:
-    that:
-      - snmpd_dontlogtcpwrappersconnects is string
-      - snmpd_dontlogtcpwrappersconnects in [ "no", "yes" ]
-    quiet: true
-  when:
-    - snmpd_dontlogtcpwrappersconnects is defined
-
-- name: assert | Test snmpd_processes
-  ansible.builtin.assert:
-    that:
-      - snmpd_processes is iterable
-    quiet: true
-  when:
-    - snmpd_processes is defined
-
-- name: assert | Test mandatory item.name in snmpd_processes
-  ansible.builtin.assert:
-    that:
-      - item.name is defined
-      - item.name is string
-    quiet: true
-  loop: "{{ snmpd_processes }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when:
-    - snmpd_processes is defined
-
-- name: assert | Test optional item.minimum in snmpd_processes
-  ansible.builtin.assert:
-    that:
-      - item.minimum is number
-    quiet: true
-  loop: "{{ snmpd_processes }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when:
-    - snmpd_processes is defined
-    - item.minimum is defined
-
-- name: assert | Test optional item.maximum in snmpd_processes
-  ansible.builtin.assert:
-    that:
-      - item.maximum is number
-    quiet: true
-  loop: "{{ snmpd_processes }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when:
-    - snmpd_processes is defined
-    - item.maximum is defined
-
-- name: assert | Test snmpd_scripts
-  ansible.builtin.assert:
-    that:
-      - snmpd_scripts is iterable
-    quiet: true
-  when:
-    - snmpd_scripts is defined
-
-- name: assert | Test mandatory item in snmpd_scripts
-  ansible.builtin.assert:
-    that:
-      - item.name is defined
-      - item.name is string
-      - item.program is defined
-      - item.program is string
-      - item.arguments is defined
-      - item.arguments is string
-    quiet: true
-  loop: "{{ snmpd_scripts }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when:
-    - snmpd_scripts is defined
-
-- name: assert | Test snmpd_disks
-  ansible.builtin.assert:
-    that:
-      - snmpd_disks is iterable
-    quiet: true
-  when:
-    - snmpd_disks is defined
-
-- name: assert | Test mandatory item in snmpd_disks
-  ansible.builtin.assert:
-    that:
-      - item.path is defined
-      - item.path is string
-    quiet: true
-  loop: "{{ snmpd_disks }}"
-  loop_control:
-    label: "{{ item.path }}"
-  when:
-    - snmpd_disks is defined
-
-- name: assert | Test optional item.minimum in snmpd_disks
-  ansible.builtin.assert:
-    that:
-      - item.minimum is number
-    quiet: true
-  loop: "{{ snmpd_disks }}"
-  loop_control:
-    label: "{{ item.path }}"
-  when:
-    - snmpd_disks is defined
-    - item.minimum is defined
-
-- name: assert | Test snmpd_load
-  ansible.builtin.assert:
-    that:
-      - snmpd_load is mapping
-      - snmpd_load.one_minute_average is defined
-      - snmpd_load.one_minute_average is defined
-      - snmpd_load.five_minute_average is defined
-      - snmpd_load.five_minute_average is number
-      - snmpd_load.fifteen_minute_average is defined
-      - snmpd_load.fifteen_minute_average is number
-    quiet: true
-  when:
-    - snmpd_load is defined
-
-- name: assert | Test snmpd_v3_users
-  ansible.builtin.assert:
-    that:
-      - snmpd_v3_users is iterable
-    quiet: true
-  when:
-    - snmpd_v3_users is defined
-
-- name: assert | Test mandatory item in snmpd_v3_users
-  ansible.builtin.assert:
-    that:
-      - item.username is defined
-      - item.username is string
-      - item.auth_proto is defined
-      - item.auth_proto is string
-      - item.auth_proto in [ "MD5", "SHA" ]
-      - item.auth_pass is defined
-      - item.auth_pass is string
-      - item.priv_proto is defined
-      - item.priv_proto is string
-      - item.priv_proto in [ "DES", "AES" ]
-      - item.priv_pass is defined
-      - item.priv_pass is string
-    quiet: true
-  loop: "{{ snmpd_v3_users }}"
-  loop_control:
-    label: "{{ item.username }}"
-  when:
-    - snmpd_v3_users is defined
-
-- name: assert | Test optional item.readonly in snmpd_v3_users
-  ansible.builtin.assert:
-    that:
-      - item.readonly is boolean
-    quiet: true
-  loop: "{{ snmpd_v3_users }}"
-  loop_control:
-    label: "{{ item.username }}"
-  when:
-    - snmpd_v3_users is defined
-    - item.readonly is defined
-
-- name: assert | Test optional item.authpriv in snmpd_v3_users
-  ansible.builtin.assert:
-    that:
-      - item.authpriv is boolean
-    quiet: true
-  loop: "{{ snmpd_v3_users }}"
-  loop_control:
-    label: "{{ item.username }}"
-  when:
-    - snmpd_v3_users is defined
-    - item.authpriv is defined
+# Validates the role variables before any change is made to the managed host.
+# The block directive applies to every task below it; on an `import_tasks` the
+# directive would be ignored, which is why it lives here instead of in main.yml.
+- name: Check the role variables
+  delegate_to: localhost
+  become: false
+  block:
+    - name: assert | Test snmpd_security_names
+      ansible.builtin.assert:
+        that:
+          - snmpd_security_names is iterable
+        quiet: true
+      when:
+        - snmpd_security_names is defined
+    - name: assert | Test item in snmpd_security_names
+      ansible.builtin.assert:
+        that:
+          - item.name is defined
+          - item.name is string
+          - item.name is not none
+          - item.source is defined
+          - item.source is string
+          - item.source is not none
+          - item.community is defined
+          - item.community is string
+          - item.community is not none
+        quiet: true
+      loop: "{{ snmpd_security_names }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when:
+        - snmpd_security_names is defined
+    - name: assert | Test snmpd_groups
+      ansible.builtin.assert:
+        that:
+          - snmpd_groups is iterable
+        quiet: true
+      when:
+        - snmpd_groups is defined
+    - name: assert | Test item in snmpd_groups
+      ansible.builtin.assert:
+        that:
+          - item.name is defined
+          - item.name is string
+          - item.name is not none
+          - item.security_model is defined
+          - item.security_model is string
+          - item.security_model in [ "v1", "v2c" ]
+          - item.security_name is defined
+          - item.security_name is string
+          - item.security_name is not none
+        quiet: true
+      loop: "{{ snmpd_groups }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when:
+        - snmpd_groups is defined
+    - name: assert | Test snmpd_views
+      ansible.builtin.assert:
+        that:
+          - snmpd_views is iterable
+        quiet: true
+      when:
+        - snmpd_views is defined
+    - name: assert | Test item in snmpd_views
+      ansible.builtin.assert:
+        that:
+          - item.name is defined
+          - item.name is string
+          - item.name is not none
+          - item.type is defined
+          - item.type is string
+          - item.type is not none
+          - item.type in [ "included", "excluded" ]
+          - item.subtree is defined
+          - item.subtree is string
+          - item.subtree is not none
+        quiet: true
+      loop: "{{ snmpd_views }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when:
+        - snmpd_views is defined
+    - name: assert | Test snmpd_accesses
+      ansible.builtin.assert:
+        that:
+          - snmpd_accesses is iterable
+        quiet: true
+      when:
+        - snmpd_accesses is defined
+    - name: assert | Test item in snmpd_accesses
+      ansible.builtin.assert:
+        that:
+          - item.group is defined
+          - item.group is string
+          - item.group is not none
+          - item.context is defined
+          - item.context is string
+          - item.context is not none
+          - item.security_model is defined
+          - item.security_model is string
+          - item.security_model in [ "any", "v1", "v2c", "usm" ]
+          - item.security_level is defined
+          - item.security_level is string
+          - item.security_level is not none
+          - item.prefix is defined
+          - item.prefix is string
+          - item.prefix is not none
+          - item.read is defined
+          - item.read is string
+          - item.read is not none
+          - item.write is defined
+          - item.write is string
+          - item.write is not none
+          - item.notif is defined
+          - item.notif is string
+          - item.notif is not none
+        quiet: true
+      loop: "{{ snmpd_accesses }}"
+      loop_control:
+        label: "{{ item.group }}"
+      when:
+        - snmpd_accesses is defined
+    - name: assert | Test snmpd_syslocation
+      ansible.builtin.assert:
+        that:
+          - snmpd_syslocation is string
+        quiet: true
+      when:
+        - snmpd_syslocation is defined
+    - name: assert | Test snmpd_syscontact
+      ansible.builtin.assert:
+        that:
+          - snmpd_syscontact is string
+        quiet: true
+      when:
+        - snmpd_syscontact is defined
+    - name: assert | Test snmpd_sysservices
+      ansible.builtin.assert:
+        that:
+          - snmpd_sysservices is number
+        quiet: true
+      when:
+        - snmpd_sysservices is defined
+    - name: assert | Test snmpd_master_agentx
+      ansible.builtin.assert:
+        that:
+          - snmpd_master_agentx is boolean
+        quiet: true
+      when:
+        - snmpd_master_agentx is defined
+    - name: assert | Test snmpd_agent_address
+      ansible.builtin.assert:
+        that:
+          - snmpd_agent_address is string
+          - snmpd_agent_address is search(':')
+        quiet: true
+      when:
+        - snmpd_agent_address is defined
+    - name: assert | Test snmpd_dontlogtcpwrappersconnects
+      ansible.builtin.assert:
+        that:
+          - snmpd_dontlogtcpwrappersconnects is string
+          - snmpd_dontlogtcpwrappersconnects in [ "no", "yes" ]
+        quiet: true
+      when:
+        - snmpd_dontlogtcpwrappersconnects is defined
+    - name: assert | Test snmpd_processes
+      ansible.builtin.assert:
+        that:
+          - snmpd_processes is iterable
+        quiet: true
+      when:
+        - snmpd_processes is defined
+    - name: assert | Test mandatory item.name in snmpd_processes
+      ansible.builtin.assert:
+        that:
+          - item.name is defined
+          - item.name is string
+        quiet: true
+      loop: "{{ snmpd_processes }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when:
+        - snmpd_processes is defined
+    - name: assert | Test optional item.minimum in snmpd_processes
+      ansible.builtin.assert:
+        that:
+          - item.minimum is number
+        quiet: true
+      loop: "{{ snmpd_processes }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when:
+        - snmpd_processes is defined
+        - item.minimum is defined
+    - name: assert | Test optional item.maximum in snmpd_processes
+      ansible.builtin.assert:
+        that:
+          - item.maximum is number
+        quiet: true
+      loop: "{{ snmpd_processes }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when:
+        - snmpd_processes is defined
+        - item.maximum is defined
+    - name: assert | Test snmpd_scripts
+      ansible.builtin.assert:
+        that:
+          - snmpd_scripts is iterable
+        quiet: true
+      when:
+        - snmpd_scripts is defined
+    - name: assert | Test mandatory item in snmpd_scripts
+      ansible.builtin.assert:
+        that:
+          - item.name is defined
+          - item.name is string
+          - item.program is defined
+          - item.program is string
+          - item.arguments is defined
+          - item.arguments is string
+        quiet: true
+      loop: "{{ snmpd_scripts }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when:
+        - snmpd_scripts is defined
+    - name: assert | Test snmpd_disks
+      ansible.builtin.assert:
+        that:
+          - snmpd_disks is iterable
+        quiet: true
+      when:
+        - snmpd_disks is defined
+    - name: assert | Test mandatory item in snmpd_disks
+      ansible.builtin.assert:
+        that:
+          - item.path is defined
+          - item.path is string
+        quiet: true
+      loop: "{{ snmpd_disks }}"
+      loop_control:
+        label: "{{ item.path }}"
+      when:
+        - snmpd_disks is defined
+    - name: assert | Test optional item.minimum in snmpd_disks
+      ansible.builtin.assert:
+        that:
+          - item.minimum is number
+        quiet: true
+      loop: "{{ snmpd_disks }}"
+      loop_control:
+        label: "{{ item.path }}"
+      when:
+        - snmpd_disks is defined
+        - item.minimum is defined
+    - name: assert | Test snmpd_load
+      ansible.builtin.assert:
+        that:
+          - snmpd_load is mapping
+          - snmpd_load.one_minute_average is number
+          - snmpd_load.five_minute_average is number
+          - snmpd_load.fifteen_minute_average is number
+        quiet: true
+      when:
+        - snmpd_load is defined
+    - name: assert | Test snmpd_v3_users
+      ansible.builtin.assert:
+        that:
+          - snmpd_v3_users is iterable
+        quiet: true
+      when:
+        - snmpd_v3_users is defined
+    - name: assert | Test mandatory item in snmpd_v3_users
+      ansible.builtin.assert:
+        that:
+          - item.username is defined
+          - item.username is string
+          - item.username is not none
+          - item.auth_proto is defined
+          - item.auth_proto is string
+          - item.auth_proto in [ "MD5", "SHA", "SHA-224", "SHA-256", "SHA-384", "SHA-512" ]
+          - item.auth_pass is defined
+          - item.auth_pass is string
+          - item.auth_pass is not none
+          - item.priv_proto is defined
+          - item.priv_proto is string
+          - item.priv_proto in [ "DES", "AES", "AES-128", "AES-192", "AES-256" ]
+          - item.priv_pass is defined
+          - item.priv_pass is string
+          - item.priv_pass is not none
+        quiet: true
+      loop: "{{ snmpd_v3_users }}"
+      loop_control:
+        label: "{{ item.username }}"
+      when:
+        - snmpd_v3_users is defined
+    - name: assert | Test optional item.readonly in snmpd_v3_users
+      ansible.builtin.assert:
+        that:
+          - item.readonly is boolean
+        quiet: true
+      loop: "{{ snmpd_v3_users }}"
+      loop_control:
+        label: "{{ item.username }}"
+      when:
+        - snmpd_v3_users is defined
+        - item.readonly is defined
+    - name: assert | Test optional item.authpriv in snmpd_v3_users
+      ansible.builtin.assert:
+        that:
+          - item.authpriv is boolean
+        quiet: true
+      loop: "{{ snmpd_v3_users }}"
+      loop_control:
+        label: "{{ item.username }}"
+      when:
+        - snmpd_v3_users is defined
+        - item.authpriv is defined
+    - name: assert | Test that item.username in snmpd_v3_users is usable
+      ansible.builtin.assert:
+        that:
+          # The username ends up as a bare token in the net-snmp persistence
+          # file, so anything but a plain token would corrupt it.
+          - item.username is match('^[A-Za-z0-9._-]+$')
+        quiet: true
+        fail_msg: >-
+          SNMPv3 user names may only contain letters, digits, dots, underscores
+          and dashes, got '{{ item.username }}'.
+      loop: "{{ snmpd_v3_users }}"
+      loop_control:
+        label: "{{ item.username }}"
+      when: snmpd_v3_users is defined
+    - name: assert | Test that snmpd_v3_users has no duplicate user names
+      ansible.builtin.assert:
+        that:
+          - snmpd_v3_users | map(attribute='username') | list | unique | length
+            == snmpd_v3_users | length
+        quiet: true
+        fail_msg: >-
+          Duplicate SNMPv3 user names found:
+          {{ snmpd_v3_users | map(attribute='username') | list }}.
+          A user name may only be defined once across the global, group and
+          host level lists.
+      when: snmpd_v3_users is defined

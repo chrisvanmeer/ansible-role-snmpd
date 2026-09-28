@@ -11,40 +11,26 @@ extends: default
 rules:
 
   braces:
-    # Defaults
-    # min-spaces-inside: 0
-    # max-spaces-inside: 0
-
     # Keeping 0 min-spaces to not error on empty dictionary definitions
     min-spaces-inside: 0
     # Allowing one space inside braces to improve code readability
     max-spaces-inside: 1
 
   brackets:
-    # Defaults
-    # min-spaces-inside: 0
-    # max-spaces-inside: 0
-
     # Keeping 0 min-spaces to not error on empty list definitions
     min-spaces-inside: 0
     # Allowing one space inside braces to improve code readability
     max-spaces-inside: 1
 
   comments:
-    # Defaults
-    # level: warning
-    # require-starting-space: true
-    # min-spaces-from-content: 2
-
     # Disabling to allow for code comment blocks and #!/usr/bin/ansible-playbook
     require-starting-space: false
+    # Required by ansible-lint
+    min-spaces-from-content: 1
+
+  comments-indentation: false
 
   indentation:
-    # Defaults
-    # spaces: consistent
-    # indent-sequences: true
-    # check-multi-line-strings: false
-
     # Requiring 2 space indentation
     spaces: 2
     # Requiring consistent indentation within a file, either indented or not
@@ -53,17 +39,18 @@ rules:
   # Allowing for 120 character wide lines instead of 80.
   # Current displays can manage longer lines just fine.
   line-length:
-    # Defaults
-    # max: 80
-    # allow-non-breakable-words: true
-    # allow-non-breakable-inline-mappings: false
     level: warning
     max: 180
 
+  # Required by ansible-lint
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
+
   # Allow for truthies in normal letters, no capital letters.
   truthy:
-    # Defaults
-    # level: warning
     allowed-values: ["true", "false"]
+    # Only check values, not keys, to allow the GitHub Actions `on:` key.
+    check-keys: false
     # Uncomment to allow 'yes' and 'no' to be used as well
     # allowed-values: ["true", "false", "yes", "no"]

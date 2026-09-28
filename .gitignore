@@ -1,0 +1,16 @@
+# Ansible Galaxy / role cache
+.ansible/
+
+# Molecule ephemeral state and generated inventory
+molecule/*/*/
+molecule/*/*.*/
+.molecule/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Ansible
+*.retry

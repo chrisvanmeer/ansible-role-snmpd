@@ -1,0 +1,42 @@
+---
+# `shared` holds the playbooks that both scenarios import, so it deliberately has
+# no molecule.yml and is not picked up as a scenario of its own.
+driver:
+  name: docker
+platforms:
+  - name: snmpd-test
+    image: geerlingguy/docker-ubuntu2204-ansible:latest
+    command: /lib/systemd/systemd
+    privileged: true
+    pre_build_image: true
+    cgroupns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    groups:
+      - snmpd
+provisioner:
+  name: ansible
+  playbooks:
+    prepare: prepare.yml
+    converge: converge.yml
+    verify: verify.yml
+  config_options:
+    defaults:
+      interpreter_python: auto_silent
+verifier:
+  name: ansible
+# `dependency` and `cleanup` are intentionally left out: the role is installed
+# from the local checkout, so the scenarios must not reach out to Ansible
+# Galaxy, and there is nothing to clean up between runs.
+scenario:
+  destroy_sequence:
+    - destroy
+  test_sequence:
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - verify
+    - destroy

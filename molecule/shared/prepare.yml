@@ -1,0 +1,25 @@
+---
+- name: Prepare the test host
+  hosts: all
+  become: true
+  tasks:
+    - name: Refresh the APT package cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_facts.os_family == 'Debian'
+
+    - name: Wait for the cloud-init/apt locks to be released
+      ansible.builtin.shell: |
+        set -eu
+        for _ in $(seq 1 30); do
+          if ! fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; then
+            exit 0
+          fi
+          sleep 2
+        done
+        exit 1
+      args:
+        executable: /bin/sh
+      changed_when: false
+      when: ansible_facts.os_family == 'Debian'

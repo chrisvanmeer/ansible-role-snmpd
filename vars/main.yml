@@ -1,6 +1,9 @@
 ---
 # vars file for ansible-role-snmpd
 
+# Internal mapping used to resolve `snmpd_packages` per OS family.
+# It lives in vars/ on purpose: it is an implementation detail and should not be
+# something a playbook overrides directly.
 _snmpd_packages:
   default:
     - snmpd
@@ -10,7 +13,3 @@ _snmpd_packages:
     - net-snmp
   Suse:
     - net-snmp
-
-snmpd_packages: "{{ _snmpd_packages[ansible_os_family] | default(_snmpd_packages['default']) }}"
-
-snmpd_service: snmpd

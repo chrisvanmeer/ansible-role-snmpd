@@ -1,88 +1,50 @@
 {{ ansible_managed | comment }}
-
+{# Directives that are not configured are omitted entirely: every optional part
+   below is rendered with an inline conditional expression rather than a block
+   tag, because Ansible renders templates with trim_blocks enabled and a line
+   ending in a block tag loses its newline, which merges list items together. #}
 {% if snmpd_syslocation is defined %}
 {{ '%-15s' | format("syslocation") }} {{ snmpd_syslocation }}
 {% endif %}
 {% if snmpd_syscontact is defined %}
 {{ '%-15s' | format("syscontact") }} {{ snmpd_syscontact }}
 {% endif %}
-
 {% if snmpd_sysservices is defined %}
 {{ '%-15s' | format("sysServices") }} {{ snmpd_sysservices }}
 {% endif %}
-
 {% if snmpd_agent_address is defined %}
 {{ '%-15s' | format("agentaddress") }} {{ snmpd_agent_address }}
 {% endif %}
-
-{% if snmpd_master_agentx is defined %}
-{% if snmpd_master_agentx | bool %}
+{% if snmpd_master_agentx | default(false) | bool %}
 {{ '%-15s' | format("master") }} agentx
 {% endif %}
-{% endif %}
-
-{% if snmpd_views is defined %}
-{% for view in snmpd_views %}
-view {{ '%-10s' | format(view.name) }} {{ view.type }} {{ view.subtree }}{% if view.mask is defined %} {{ view.mask }}{% endif %}
-
+{% for view in snmpd_views | default([]) %}
+view {{ '%-10s' | format(view.name) }} {{ view.type }} {{ view.subtree }}{{ ' ' ~ view.mask if view.mask is defined else '' }}
 {% endfor %}
-{% endif %}
-
-{% if snmpd_security_names is defined %}
-{% for security_name in snmpd_security_names %}
+{% for security_name in snmpd_security_names | default([]) %}
 com2sec {{ security_name.name }} {{ security_name.source }} {{ security_name.community }}
 {% endfor %}
-{% endif %}
-
-{% if snmpd_groups is defined %}
-{% for group in snmpd_groups %}
+{% for group in snmpd_groups | default([]) %}
 group {{ group.name }} {{ group.security_model }} {{ group.security_name }}
 {% endfor %}
-{% endif %}
-
-{% if snmpd_accesses is defined %}
-{% for access in snmpd_accesses %}
+{% for access in snmpd_accesses | default([]) %}
 access {{ access.group }} "{{ access.context }}" {{ access.security_model }} {{ access.security_level }} {{ access.prefix }} {{ access.read }} {{ access.write }} {{ access.notif }}
 {% endfor %}
-{% endif %}
-
 {% if snmpd_dontlogtcpwrappersconnects is defined %}
-dontLogTCPWrappersConnects {{ snmpd_dontlogtcpwrappersconnects }}
+{{ '%-22s' | format("dontLogTCPWrappersConnects") }} {{ snmpd_dontlogtcpwrappersconnects }}
 {% endif %}
-
-{% if snmpd_processes is defined %}
-{% for process in snmpd_processes %}
-proc {{ process.name }}{% if process.maximum is defined %} {{ process.maximum }}{% endif %}{% if process.minimum is defined %} {{ process.minimum }}{% endif %}
+{% for process in snmpd_processes | default([]) %}
+proc {{ process.name }}{{ ' ' ~ process.maximum if process.maximum is defined else '' }}{{ ' ' ~ process.minimum if process.minimum is defined else '' }}
 {% endfor %}
-{% endif %}
-
-{% if snmpd_scripts is defined %}
-{% for script in snmpd_scripts %}
+{% for script in snmpd_scripts | default([]) %}
 exec {{ script.name }} {{ script.program }} {{ script.arguments }}
 {% endfor %}
-{% endif %}
-
-{% if snmpd_disks is defined %}
-{% for disk in snmpd_disks %}
-exec {{ disk.path }} {{ disk.minimum }}
+{% for disk in snmpd_disks | default([]) %}
+disk {{ disk.path }}{{ ' ' ~ disk.minimum if disk.minimum is defined else '' }}
 {% endfor %}
-{% endif %}
-
 {% if snmpd_load is defined %}
 load {{ snmpd_load.one_minute_average }} {{ snmpd_load.five_minute_average }} {{ snmpd_load.fifteen_minute_average }}
 {% endif %}
-
-{% if snmpd_v3_users | length > 0 %}
-{% for user in snmpd_v3_users %}
-{% if user.readonly is defined %}
-{% if user.readonly | bool %}
-{{ '%-15s' | format("rouser") }}  {{ user.username }}{% if user.authpriv is defined and user.authpriv | bool %} authpriv{% endif %}
-{% else %}
-{{ '%-15s' | format("rwuser") }}  {{ user.username }}{% if user.authpriv is defined and user.authpriv | bool %} authpriv{% endif %}
-{% endif %}
-{% else %}
-{{ '%-15s' | format("rwuser") }}  {{ user.username }}{% if user.authpriv is defined and user.authpriv | bool %} authpriv{% endif %}
-{% endif %}
+{% for user in snmpd_v3_users | default([]) %}
+{{ '%-15s' | format("rouser" if user.readonly | default(false) | bool else "rwuser") }} {{ user.username }}{{ ' authpriv' if user.authpriv | default(false) | bool else '' }}
 {% endfor %}
-{% endif %}
-

@@ -1,0 +1,59 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    snmpd_syslocation: Amsterdam
+    snmpd_syscontact: root@example.com
+    snmpd_sysservices: 72
+    snmpd_agent_address: udp:127.0.0.1:161
+    snmpd_dontlogtcpwrappersconnects: "no"
+    snmpd_load:
+      one_minute_average: 12
+      five_minute_average: 14
+      fifteen_minute_average: 14
+    snmpd_disks:
+      - path: /
+    snmpd_processes:
+      - name: sshd
+      - name: snmpd
+        maximum: 4
+        minimum: 1
+    snmpd_v3_users_global:
+      - username: snmp
+        auth_proto: SHA
+        auth_pass: Sa9e5nV3TestAuth
+        priv_proto: AES
+        priv_pass: Sa9e5nV3TestPriv
+        readonly: true
+        authpriv: true
+    snmpd_v3_users_host:
+      - username: snmpv3host
+        auth_proto: SHA-256
+        auth_pass: Sa9e5nV3HostAuth
+        priv_proto: AES-256
+        priv_pass: Sa9e5nV3HostPriv
+        readonly: true
+    snmpd_security_names:
+      - name: testUser
+        source: default
+        community: public
+    snmpd_groups:
+      - name: testGroup
+        security_model: v2c
+        security_name: testUser
+    snmpd_views:
+      - name: systemview
+        type: included
+        subtree: ".1.3.6.1.2.1.1"
+    snmpd_accesses:
+      - group: testGroup
+        context: ""
+        security_model: any
+        security_level: noauth
+        prefix: exact
+        read: systemview
+        write: none
+        notif: none
+  roles:
+    - role: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}"
